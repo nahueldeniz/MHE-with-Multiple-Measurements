@@ -148,7 +148,7 @@ function S = build_setup(S)
     S.config.model.dev      = 15;                                                   % porcentual value of uncertainty
     S.config.iterCorrecOn   = 200;
     S.config.CtrlNoise_lvl  = [0; 0];
-    S.config.DENSITIES      = 10;                                                   % In %, the number of elemets of this variable determines the number of simulations to be carried out
+    S.config.DENSITIES      = 1;                                                    % In %, the number of elemets of this variable determines the number of simulations to be carried out
     % Reference velocities ________________________________________________
     S.config.vNr            = 0;
     S.config.vNTarget       = 0.3;
@@ -174,10 +174,10 @@ function S = build_setup(S)
     S.config.lidarOn        = false;
     S.config.obsDetection   = false;
     % Multiple measurements configuration _________________________________
-    S.config.numSensors     = 1;
+    S.config.numSensors     = 5;
     S.config.fractionTs     = 0;                                                   % Value in [0, 99]: if measurements are taken in burst, then they are taken in this interval of Ts
     % Plot data online during experiments. USeful for debbuging purposes __
-    S.config.dataOnline     = true;
+    S.config.dataOnline     = false;
     S.config.save_workspace = false;    
     S.config.video          = false;
     %    
