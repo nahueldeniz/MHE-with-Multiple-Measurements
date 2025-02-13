@@ -1,0 +1,342 @@
+% ************************************************************************
+% Plot L2 and Welsch/Leclerc functions
+% *************************************************************************
+% clrs =  [0.45, 0.80, 0.69;...
+%          0.98, 0.40, 0.35;...
+%          0.55, 0.60, 0.79;...
+%          0.90, 0.70, 0.30];
+
+
+clrs = [
+    0.0, 0.45, 0.70;  % Blue (Algorithm 1 - Config 1)
+    0.3, 0.60, 0.85;  % Light Blue (Algorithm 1 - Config 2)
+    0.5, 0.75, 1.00;  % Lighter Blue (Algorithm 1 - Config 3)
+    
+    0.85, 0.33, 0.10; % Vermillion (Algorithm 2 - Config 1)
+    0.90, 0.50, 0.20; % Light Vermillion (Algorithm 2 - Config 2)
+    0.95, 0.60, 0.35; % Lighter Vermillion (Algorithm 2 - Config 3)
+    
+    0.93, 0.69, 0.13; % Yellow (Algorithm 3 - Config 1)
+    0.95, 0.75, 0.30; % Light Yellow (Algorithm 3 - Config 2)
+    0.98, 0.85, 0.45; % Lighter Yellow (Algorithm 3 - Config 3)
+    
+    0.47, 0.67, 0.19; % Green (Algorithm 4 - Config 1)
+    0.60, 0.80, 0.35; % Light Green (Algorithm 4 - Config 2)
+    0.75, 0.90, 0.50; % Lighter Green (Algorithm 4 - Config 3)
+    
+    0.35, 0.70, 0.90; % Sky Blue (Algorithm 5 - Config 1)
+    0.55, 0.85, 1.00; % Light Sky Blue (Algorithm 5 - Config 2)
+    0.70, 0.95, 1.00; % Lighter Sky Blue (Algorithm 5 - Config 3)
+    
+    0.75, 0.44, 0.86; % Purple (Algorithm 6 - Config 1)
+    0.85, 0.60, 0.95; % Light Purple (Algorithm 6 - Config 2)
+    0.92, 0.75, 1.00; % Lighter Purple (Algorithm 6 - Config 3)
+
+    0.45, 0.80, 0.69;...
+    0.98, 0.40, 0.35;...
+    0.55, 0.60, 0.79;...
+    0.90, 0.70, 0.30 ];
+%
+fontSize            = 14;   
+fsLatex             = 15;
+%
+savePlots           = true;
+%
+trajectory_color    = [0.3, 0.60, 0.85];   % Light blue for the trajectory [0.3 0.3 0.3]
+start_color         = [0.47, 0.67, 0.19];       % Green for start point
+end_color           = [0.85, 0.33, 0.10];         % Vermillion for end point
+grid_color          = [0.8, 0.8, 0.8];           % Light gray for grid        
+% 
+
+% Plot the Noises on each chanel (x, and y) -------------------------------
+noise1 = {};
+noise2 = {};
+for i=1:(length(S.config.DENSITIES)-1)*(length(S.config.AMPLITUDES)-1)
+    noise1{i} = S.data.mhempc.performance.ysim{i}(3,:)-S.data.mhempc.performance.xsim{i}(4,2:end);
+    noise2{i} = S.data.mhempc.performance.ysim{i}(4,:)-S.data.mhempc.performance.xsim{i}(5,2:end);
+end
+t       = linspace(0,S.config.Ts*length(noise1{1}),length(noise1{1}));
+%
+i=4;
+p(1) = figure(1);
+hold on;
+plot(t, S.data.mhempc.performance.ysim{i}(3,1:end),'color',clrs(19,:),'LineWidth',1);
+plot(t, S.data.mhempc.performance.xsim{i}(4,2:end),'k','LineWidth',5)
+plot(t, S.data.mhempc.performance.xest{i}(4,2:end),'y-.','LineWidth',2)
+hold off;
+% Configure the format of the figure
+set(gca, 'FontName', 'Times New Roman', 'FontSize', fontSize, 'LineWidth', 2);  % Set font and axis line width
+set(gca, 'GridAlpha', 0.3);                                                     % Set grid line intensity (transparency)
+set(gca, 'XColor', 'k', 'YColor', 'k');                                         % Set axis line color to black
+grid on;                                                                        % Turn on grid
+set(gca, 'XGrid', 'on', 'YGrid', 'on', 'GridColor', grid_color);                % Control grid for X and Y axis        
+box on;                                                                         % Use 'box off' if you want to remove the box around the axes
+xlabel('$t\,(s)$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+ylabel('$x\,(m)$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+set(gca, 'TickDir', 'out');                                                     % Options: 'in', 'out', 'both'        
+grid minor;
+set(gca, 'MinorGridLineStyle', ':');                                            % Dotted minor grid
+set(gca, 'MinorGridAlpha', 0.2);                                                % Set minor grid transparency
+xlim([0 130]);
+% ylim([-30 30]);
+set(p(1),'Units','centimeters','Position',[2,2,15,10]);
+set(p(1),'PaperPositionMode','auto');
+if savePlots
+    exportgraphics(p(1),['Figures/noise_xMHEstandard-alpha-',num2str(S.mheLoss.nlmheLoss.alphaPrmVal),'c-',num2str(S.mheLoss.nlmheLoss.cPrmVal),'.pdf'],'ContentType','vector');
+end
+%
+p(2) = figure(2);
+hold on;
+plot(t, S.data.mhempc.performance.ysim{i}(4,1:end),'color',clrs(20,:),'LineWidth',1);
+plot(t, S.data.mhempc.performance.xsim{i}(5,2:end),'k','LineWidth',5)
+plot(t, S.data.mhempc.performance.xest{i}(5,2:end),'c-.','LineWidth',2)
+hold off;
+% Configure the format of the figure
+set(gca, 'FontName', 'Times New Roman', 'FontSize', fontSize, 'LineWidth', 2);  % Set font and axis line width
+set(gca, 'GridAlpha', 0.3);                                                     % Set grid line intensity (transparency)
+set(gca, 'XColor', 'k', 'YColor', 'k');                                         % Set axis line color to black
+grid on;                                                                        % Turn on grid
+set(gca, 'XGrid', 'on', 'YGrid', 'on', 'GridColor', grid_color);                % Control grid for X and Y axis        
+box on;                                                                         % Use 'box off' if you want to remove the box around the axes
+xlabel('$t\,(s)$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+ylabel('$y\,(m)$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+set(gca, 'TickDir', 'out');                                                     % Options: 'in', 'out', 'both'        
+grid minor;
+set(gca, 'MinorGridLineStyle', ':');                                            % Dotted minor grid
+set(gca, 'MinorGridAlpha', 0.2);                                                % Set minor grid transparency
+xlim([0 130]);
+% ylim([-30 30]);
+set(p(2),'Units','centimeters','Position',[2,2,15,10]);
+set(p(2),'PaperPositionMode','auto');
+if savePlots
+    exportgraphics(p(2),['Figures/noise_yMHEstandard-alpha-',num2str(S.mheLoss.nlmheLoss.alphaPrmVal),'c-',num2str(S.mheLoss.nlmheLoss.cPrmVal),'.pdf'],'ContentType','vector');
+end
+%%
+p(3) = figure(3);
+hold on;
+i = 28;
+plot(S.path.coordinates(1,:),S.path.coordinates(2,:),'Color',trajectory_color,'LineWidth',5);
+plot(S.data.mhempc.performance.xsim{i}(4,:),S.data.mhempc.performance.xsim{i}(5,:),'Color',[0 0 0],'LineWidth',2);
+numPoints   = 9;
+points      = ceil(linspace(1, 0.98*length(S.data.mhempc.performance.xsim{1}),numPoints));
+for j=1:numPoints
+    hold on;
+    plot_mono2(S,S.data.mhempc.performance.xsim{i}(:,points(j)));
+end
+hold off;
+% Configure the format of the figure
+daspect([1 1 1])
+set(gca, 'FontName', 'Times New Roman', 'FontSize', fontSize, 'LineWidth', 2);  % Set font and axis line width
+set(gca, 'GridAlpha', 0.3);                                                     % Set grid line intensity (transparency)
+set(gca, 'XColor', 'k', 'YColor', 'k');                                         % Set axis line color to black
+grid on;                                                                        % Turn on grid
+set(gca, 'XGrid', 'on', 'YGrid', 'on', 'GridColor', grid_color);                % Control grid for X and Y axis        
+box on;                                                                         % Use 'box off' if you want to remove the box around the axes
+xlabel('$x\,(m)$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+ylabel('$y\,(m)$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+set(gca, 'TickDir', 'out');                                                     % Options: 'in', 'out', 'both'        
+grid minor;
+set(gca, 'MinorGridLineStyle', ':');                                            % Dotted minor grid
+set(gca, 'MinorGridAlpha', 0.2);                                                % Set minor grid transparency
+xlim([-1 12]);
+ylim([0 9]);
+set(p(3),'Units','centimeters','Position',[2,2,15,10]);
+set(p(3),'PaperPositionMode','auto');
+if savePlots
+    exportgraphics(p(3),['Figures/monoMHEstandard-alpha-',num2str(S.mheLoss.nlmheLoss.alphaPrmVal),'c-',num2str(S.mheLoss.nlmheLoss.cPrmVal),'.pdf'],'ContentType','vector');
+end
+%
+%%
+meanErr     = NaN(length(S.config.AMPLITUDES),length(S.config.DENSITIES));
+maxErr      = NaN(length(S.config.AMPLITUDES),length(S.config.DENSITIES));
+meanCompB   = NaN(length(S.config.AMPLITUDES),length(S.config.DENSITIES));
+amplis      = length(S.config.AMPLITUDES)-1;
+densities   = length(S.config.DENSITIES)-1;
+for num_ampli=1:amplis
+    for num_density=1:densities
+        err = [];
+        for i=1:length(S.data.mhempc.performance.xsim{(num_ampli-1)*densities + num_density})
+            err = [err, norm(S.data.mhempc.performance.xsim{(num_ampli-1)*densities + num_density}(:,i)-S.data.mhempc.performance.xest{(num_ampli-1)*densities + num_density}(:,i))];
+        end
+        meanErr(num_ampli,num_density)   = mean(err);
+        maxErr(num_ampli,num_density)    = max(err);
+        meanCompB(num_ampli,num_density) = mean(S.exec_time.t_mhe);
+    end
+end
+pltContourf(S,meanErr,fontSize,savePlots,['Figures/meanErrMHEstandard-alpha',num2str(S.mheLoss.nlmheLoss.alphaPrmVal),'c-',num2str(S.mheLoss.nlmheLoss.cPrmVal)]);
+% pltContourf(S,maxErr,fontSize,savePlots,['Figures/maxErr-alpha',num2str(S.mheLoss.nlmheLoss.alphaPrmVal),'c-',num2str(S.mheLoss.nlmheLoss.cPrmVal)]);
+% pltContourf(S,meanCompB,fontSize,savePlots,['Figures/comBurden-alpha',num2str(S.mheLoss.nlmheLoss.alphaPrmVal),'c-',num2str(S.mheLoss.nlmheLoss.cPrmVal)]);
+
+
+
+
+
+
+function pltContourf(S,mtxData,fontSize,savePlots,nameFig)
+    p                   = figure;
+    fineGird            = 60;
+    [x,y]               = meshgrid(1:size(mtxData,2),1:size(mtxData,1));
+    [x_fine, y_fine]    = meshgrid(linspace(1,size(mtxData,2),fineGird),linspace(1,size(mtxData,1),fineGird));
+    fineMtxData         = interp2(x,y,mtxData,x_fine,y_fine,'linear');
+    x_fine              = linspace(1,fineGird,fineGird);
+    y_fine              = linspace(1,fineGird,fineGird);
+    contourf(x_fine,y_fine,fineMtxData,20,'LineColor','none');
+    c = colorbar;
+    c.Ticks = [0.2:0.2:2.2];
+    xticks(5:10:55);
+    xticklabels({'1','5','10','25','50','75'});
+    xlabel({'$Outliers \,Density\,\%$'},'Interpreter','latex')
+    yticks(5:10:55);
+    yticklabels({'1','2','4','8','16','32'});
+    ylabel({'$Outliers \,Ampitude\,(m)$'},'Interpreter','latex')
+    set(gca, 'TickDir', 'out');                                                     % Options: 'in', 'out', 'both'        
+    grid minor;
+    set(gca, 'MinorGridLineStyle', ':');                                            % Dotted minor grid
+    set(gca, 'MinorGridAlpha', 0.2);
+    set(gca,'FontSize',fontSize,'FontName','Times New Roman')
+    grid on;
+    set(gca,'GridAlpha',0.3')
+    box on;
+    set(p,'Units','centimeters','Position',[2,2,15,10]);
+    set(p,'PaperPositionMode','auto');
+
+    if savePlots
+        exportgraphics(p,[nameFig,'.pdf'],'ContentType','vector');
+    end
+end
+
+function plot_mono2(S, qk, clr)
+    if nargin == 3
+        clrTractor          = clr;
+        clrWheel            = clr;
+        clrAxe              = clr;
+        clrLongAxe          = clr;
+        clrTrailerLoad      = clr;
+        clrLastTrailerLoad  = clr;
+        noRef               = true;
+    else
+        clrTractor          = 'y';
+        clrWheel            = 'k';
+        clrAxe              = 'k';
+        clrLongAxe          = 'k';
+        clrTrailerLoad      = 'b';
+        clrLastTrailerLoad  = 'r';
+        noRef               = false;
+    end
+    % Declare all local variables for paralellising
+    if strcmp(S.config.CtrlMethod,'proposed')
+        if ~isempty(S.mpc.mpcCasadi.Qtraj)
+            Qtraj = S.mpc.mpcCasadi.Qtraj;
+        else
+            Qtraj = repmat(S.mpc.mpcCasadi.q0bar, 1, S.config.Np);
+        end
+    end
+    if strcmp(S.config.CtrlMethod,'fnmppc')
+        if ~isempty(S.fnmppc.Qtraj)
+            Qtraj = S.fnmppc.Qtraj;
+        else
+            Qtraj = repmat(S.fnmppc.optiMPC.value(S.fnmppc.qinit), 1, S.config.Np);
+        end
+    end    
+    coordinates         = S.path.coordinates;
+    Nt                  = S.config.Nt;
+    segmentTosteer      = S.config.segmentTosteer;
+    ref                 = S.controller.ref;
+    xReachable          = ref.xReachable;
+    yReachable          = ref.yReachable;
+    nearObs             = S.path.nearObs;
+    XYtrailerAxe        = S.system.XYtrailerAxe;
+    XYtrailerWheelLeft  = S.system.XYtrailerWheelLeft;
+    XYtrailerWheelRight = S.system.XYtrailerWheelRight;
+    XYtrailerLongAxe    = S.system.XYtrailerLongAxe;
+     
+    % Plot the current reference
+    if segmentTosteer == 0
+        clr         = 'y';
+        clrReach    = [0.95 0.95 0.1];
+    elseif segmentTosteer == Nt
+        clr         = 'r';
+        clrReach    = [1 0.1 0.1];
+    else
+        clr = 'b';
+        clrReach    = [0.1 0.1 1];
+    end
+    % plot the reachable reference
+    plot(xReachable,yReachable,'color',clrReach,'marker','+','linewidth',2,'markersize',15)
+    plot(xReachable,yReachable,'color',clrReach,'marker','o','linewidth',2,'markersize',15)
+    %
+    thetas  = qk(Nt+1:2*Nt+1); 
+    xy0     = qk(2*Nt+2:2*Nt+3);
+    xyi     = zeros(2,Nt+1);
+    xyi(:,1) = xy0;
+    for i=1:Nt
+        xy_aux      = qk(2*Nt+3+(i-1)*2+1:2*Nt+3+(i)*2);
+        xyi(:,i+1)  = xy_aux;
+        %
+        pltLine = [];
+        if ~isempty(nearObs) % Line betwwen trauiler and near obstacles
+            if ~isempty(pltLine)
+            end
+        end        
+    end
+    %
+    %
+    R                       = [cos(thetas(1)-pi/2), -sin(thetas(1)-pi/2); sin(thetas(1)-pi/2), cos(thetas(1)-pi/2)];
+    Rh                      = [cos(-thetas(1)-pi/2), -sin(-thetas(1)-pi/2); sin(-thetas(1)-pi/2), cos(-thetas(1)-pi/2)];
+
+    tractorBodyPlt          = S.system.XYtracBody*Rh + xyi(:,1);
+    hold on;
+    tractorBodyPlt.plot('color',clrTractor);
+    hold off;
+
+    tractorWheelLeftPlt     = R * S.system.XYtracWheelLeft + xyi(:,1);
+    tractorWheelRightPlt    = R * S.system.XYtracWheelRight + xyi(:,1);
+    tractorAxePlt           = R * S.system.XYtracAxe + xyi(:,1);
+    %
+    line(tractorWheelLeftPlt(1,:),tractorWheelLeftPlt(2,:),'color',clrWheel,'linewidth',4);
+    line(tractorWheelRightPlt(1,:),tractorWheelRightPlt(2,:),'color',clrWheel,'linewidth',4);
+    line(tractorAxePlt(1,:),tractorAxePlt(2,:),'color',clrAxe,'linewidth',2);
+    %
+    for i=1:Nt
+        R                       = [cos(thetas(i+1)-pi/2), -sin(thetas(i+1)-pi/2); sin(thetas(i+1)-pi/2), cos(thetas(i+1)-pi/2)];
+        Rtr                     = [cos(-thetas(i+1)+pi/2), -sin(-thetas(i+1)+pi/2); sin(-thetas(i+1)+pi/2), cos(-thetas(i+1)+pi/2)];
+        trailerAxePlt           = R * XYtrailerAxe + xyi(:,i+1);
+        trailerWheelLeftPlt     = R * XYtrailerWheelLeft + xyi(:,i+1);
+        trailerWheelRightPlt    = R * XYtrailerWheelRight + xyi(:,i+1);
+        trailerLongAxePlt       = R * XYtrailerLongAxe((i-1)*2+1:i*2,:) + xyi(:,i+1);
+        trailerLoadPlt          = S.system.XYtrailerLoad{i}*Rtr + xyi(:,i+1);
+        hold on;
+        if i==Nt
+            trailerLoadPlt.plot('color',clrLastTrailerLoad);
+        else
+            trailerLoadPlt.plot('color',clrTrailerLoad);
+        end
+
+        if i~= Nt
+            trailerClr = clrTrailerLoad;
+        else
+            trailerClr = clrLastTrailerLoad;
+        end
+        circles(trailerLongAxePlt(1,2),trailerLongAxePlt(2,2),S.system.r/2,'edgecolor',clrLongAxe,'facecolor','none')
+        line([trailerLongAxePlt(1,2),xyi(1,i)],[trailerLongAxePlt(2,2),xyi(2,i)],'color',clrLongAxe,'linewidth',1)    
+        line(trailerAxePlt(1,:),trailerAxePlt(2,:),'color',clrAxe,'linewidth',2)
+        line(trailerWheelLeftPlt(1,:),trailerWheelLeftPlt(2,:),'color',clrWheel,'linewidth',4)
+        line(trailerWheelRightPlt(1,:),trailerWheelRightPlt(2,:),'color',clrWheel,'linewidth',4)
+        line(trailerLongAxePlt(1,:),trailerLongAxePlt(2,:),'color',clrLongAxe,'linewidth',2)
+    end
+    %
+    if ~noRef
+        hold off;
+    end    
+    %
+    xlim([min(coordinates(1,:))-2 max(coordinates(1,:))+2]); ylim([min(coordinates(2,:))-4 max(coordinates(2,:))+4]);
+    %
+    drawnow limitrate    
+end
+
+
+
+
+
+
+
