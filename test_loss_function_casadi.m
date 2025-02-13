@@ -1,0 +1,216 @@
+xsym    = casadi.MX.sym('x');
+asym    = casadi.MX.sym('a');
+csym    = casadi.MX.sym('c');
+xOvercsym = casadi.MX.sym('xoc');
+
+
+
+rhsV1   = casadi.Function('f1',{xsym,csym},{(2*(xsym/(0.0001+csym)^2))/((xsym/(0.0001+csym)^2)+2)});
+rhsV2   = casadi.Function('f2',{xsym,csym},{20*sqrt(((xsym/(0.001+csym)^2)+1)) - 1});
+rhsV3   = casadi.Function('f3',{xsym,csym},{0.5*(xsym/(0.001+csym)^2)});
+rhsV4   = casadi.Function('f4',{xsym,csym},{log10( 0.5*(xsym/(0.001+csym)^2) + 1 )});
+rhsV5   = casadi.Function('f5',{xsym,csym},{exp(-0.5*(xsym/(0.001+csym)))});
+rhsV6   = casadi.Function('f6',{xsym,csym},{1-exp(-0.5*(xsym/(0.001+csym)))});
+rhs_garlf = (abs(asym-2)/asym) * ((((xOvercsym)^2)/(abs(asym-2)) + 1)^(asym/2) - 1);
+garlf   = casadi.Function('f6',{xOvercsym,asym},{rhs_garlf});
+
+clrs = [
+    0.0, 0.45, 0.70;  % Blue (Algorithm 1 - Config 1)
+    0.3, 0.60, 0.85;  % Light Blue (Algorithm 1 - Config 2)
+    0.5, 0.75, 1.00;  % Lighter Blue (Algorithm 1 - Config 3)
+    
+    0.85, 0.33, 0.10; % Vermillion (Algorithm 2 - Config 1)
+    0.90, 0.50, 0.20; % Light Vermillion (Algorithm 2 - Config 2)
+    0.95, 0.60, 0.35; % Lighter Vermillion (Algorithm 2 - Config 3)
+    
+    0.93, 0.69, 0.13; % Yellow (Algorithm 3 - Config 1)
+    0.95, 0.75, 0.30; % Light Yellow (Algorithm 3 - Config 2)
+    0.98, 0.85, 0.45; % Lighter Yellow (Algorithm 3 - Config 3)
+    
+    0.47, 0.67, 0.19; % Green (Algorithm 4 - Config 1)
+    0.60, 0.80, 0.35; % Light Green (Algorithm 4 - Config 2)
+    0.75, 0.90, 0.50; % Lighter Green (Algorithm 4 - Config 3)
+    
+    0.35, 0.70, 0.90; % Sky Blue (Algorithm 5 - Config 1)
+    0.55, 0.85, 1.00; % Light Sky Blue (Algorithm 5 - Config 2)
+    0.70, 0.95, 1.00; % Lighter Sky Blue (Algorithm 5 - Config 3)
+    
+    0.75, 0.44, 0.86; % Purple (Algorithm 6 - Config 1)
+    0.85, 0.60, 0.95; % Light Purple (Algorithm 6 - Config 2)
+    0.92, 0.75, 1.00; % Lighter Purple (Algorithm 6 - Config 3)
+];
+grid_color          = [0.8, 0.8, 0.8];           % Light gray for grid        
+trajectory_color    = [0.3, 0.60, 0.85];
+%
+fontSize  = 20;   
+fsLatex   = 25;
+%
+savePlots   = true;
+pltFvsx     = false;
+pltFvsAlpha = true;
+
+c       = 0:0.2:10;%1:25:1000;
+x       = 0:0.5:25;
+xOc     = -6:0.1:6;
+[X,C]   = meshgrid(x,c);
+
+valFun1  = full(rhsV1(X,C));
+valFun2  = full(rhsV2(X,C));
+valFun3  = full(rhsV3(X,C));
+valFun4  = full(rhsV4(X,C));
+valFun5  = full(rhsV5(X,C));
+valFun6  = full(rhsV6(X,C));
+
+if pltFvsx
+countFig = 1;
+    for i=[-100,-50,-30,-20,-10,-5]%[-30,-2]
+        valFun      = full(garlf(xOc,i));    
+        diffvalFun  = diff(valFun);
+        inflecFun   = diff(diffvalFun);
+        %
+        figure(countFig);
+        plot(xOc,valFun,'Color',clrs(5,:),'LineWidth',3);
+        set(gca, 'FontName', 'Times New Roman', 'FontSize', fontSize, 'LineWidth', 2);  % Set font and axis line width
+        set(gca, 'GridAlpha', 0.3);                                                     % Set grid line intensity (transparency)
+        set(gca, 'XColor', 'k', 'YColor', 'k');                                         % Set axis line color to black
+        grid on;                                                                        % Turn on grid
+        set(gca, 'XGrid', 'on', 'YGrid', 'on', 'GridColor', grid_color);                % Control grid for X and Y axis        
+        box on;                                                                         % Use 'box off' if you want to remove the box around the axes
+        xlabel('$x$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+        xticklabels({'-5c','0','5c'})
+        set(gca, 'TickDir', 'out');                                                     % Options: 'in', 'out', 'both'        
+        grid minor;
+        set(gca, 'MinorGridLineStyle', ':');                                            % Dotted minor grid
+        set(gca, 'MinorGridAlpha', 0.2);                                                % Set minor grid transparency
+        if i==-30
+            ylabel('$\phi(x,c)$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+            if savePlots
+                exportgraphics(gca,'Figures/phi.pdf','contenttype','vector')
+            end
+        else
+            ylabel('$\varphi(x,c)$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+            if savePlots
+                exportgraphics(gca,'Figures/varphi.pdf','contenttype','vector')
+            end
+        end        
+        %
+        %
+        figure(countFig+1);
+        plot(xOc(1:end-1),diffvalFun,'Color',clrs(11,:),'LineWidth',3);
+        set(gca, 'FontName', 'Times New Roman', 'FontSize', fontSize, 'LineWidth', 2);  % Set font and axis line width
+        set(gca, 'GridAlpha', 0.3);                                                     % Set grid line intensity (transparency)
+        set(gca, 'XColor', 'k', 'YColor', 'k');                                         % Set axis line color to black
+        grid on;                                                                        % Turn on grid
+        set(gca, 'XGrid', 'on', 'YGrid', 'on', 'GridColor', grid_color);                % Control grid for X and Y axis        
+        box on;                                                                         % Use 'box off' if you want to remove the box around the axes
+        xlabel('$x$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+        xticklabels({'-5c','0','5c'})
+        set(gca, 'TickDir', 'out');                                                     % Options: 'in', 'out', 'both'        
+        grid minor;
+        set(gca, 'MinorGridLineStyle', ':');                                            % Dotted minor grid
+        set(gca, 'MinorGridAlpha', 0.2);                                                % Set minor grid transparency    
+        if i==-30
+            ylabel('$\partial\phi(x,c)/\partial x$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+            if savePlots
+                exportgraphics(gca,'Figures/diffphi.pdf','contenttype','vector')
+            end
+        else
+            ylabel('$\partial\varphi(x,c)/\partial x$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+            if savePlots
+                exportgraphics(gca,'Figures/diffvarphi.pdf','contenttype','vector')
+            end
+        end
+        %
+        %
+        figure(countFig+2);
+        plot(xOc(1:end-2),inflecFun,'Color',clrs(7,:),'LineWidth',3);
+        set(gca, 'FontName', 'Times New Roman', 'FontSize', fontSize, 'LineWidth', 2);  % Set font and axis line width
+        set(gca, 'GridAlpha', 0.3);                                                     % Set grid line intensity (transparency)
+        set(gca, 'XColor', 'k', 'YColor', 'k');                                         % Set axis line color to black
+        grid on;                                                                        % Turn on grid
+        set(gca, 'XGrid', 'on', 'YGrid', 'on', 'GridColor', grid_color);                % Control grid for X and Y axis        
+        box on;                                                                         % Use 'box off' if you want to remove the box around the axes
+        xlabel('$x$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+        xticklabels({'-5c','0','5c'})
+        set(gca, 'TickDir', 'out');                                                     % Options: 'in', 'out', 'both'        
+        grid minor;
+        set(gca, 'MinorGridLineStyle', ':');                                            % Dotted minor grid
+        set(gca, 'MinorGridAlpha', 0.2);                                                % Set minor grid transparency    
+        if i==-30
+            ylabel('$\partial\phi(x,c)/\partial x$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+            if savePlots
+                exportgraphics(gca,'Figures/diffphi.pdf','contenttype','vector')
+            end
+        else
+            ylabel('$\partial\varphi(x,c)/\partial x$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+            if savePlots
+                exportgraphics(gca,'Figures/diffvarphi.pdf','contenttype','vector')
+            end
+        end    
+        %
+        countFig = countFig+3;
+    end
+end
+% Derivatove respect to aplha
+
+if pltFvsAlpha
+    countFig    = 1;
+    alphaVals   = -30:0.1:-2;
+    for i=[0.5,1,5,100]%[-30,-2]
+        valFun      = full(garlf(i,alphaVals));    
+        diffvalFun  = diff(valFun);
+        inflecFun   = diff(diffvalFun);
+        %
+        figure(countFig);
+        plot(alphaVals,valFun,'Color',trajectory_color,'LineWidth',3);
+        set(gca, 'FontName', 'Times New Roman', 'FontSize', fontSize, 'LineWidth', 2);  % Set font and axis line width
+        set(gca, 'GridAlpha', 0.3);                                                     % Set grid line intensity (transparency)
+        set(gca, 'XColor', 'k', 'YColor', 'k');                                         % Set axis line color to black
+        grid on;                                                                        % Turn on grid
+        set(gca, 'XGrid', 'on', 'YGrid', 'on', 'GridColor', grid_color);                % Control grid for X and Y axis        
+        box on;                                                                         % Use 'box off' if you want to remove the box around the axes
+        xlabel('$\alpha$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+        % xticklabels({'-30','0','5c'})
+        set(gca, 'TickDir', 'out');                                                     % Options: 'in', 'out', 'both'        
+        grid minor;
+        set(gca, 'MinorGridLineStyle', ':');                                            % Dotted minor grid
+        set(gca, 'MinorGridAlpha', 0.2);                                                % Set minor grid transparency
+        ylabel('$\partial f(x,\alpha,c)/\partial \alpha$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+        if savePlots
+            exportgraphics(gca,['Figures/diffF_',num2str(i),'.pdf'],'contenttype','vector')
+        end
+        %
+        %
+        % figure(countFig+1);
+        % plot(alphaVals(1:end-1),diffvalFun,'Color',clrs(11,:),'LineWidth',3);
+        % set(gca, 'FontName', 'Times New Roman', 'FontSize', fontSize, 'LineWidth', 2);  % Set font and axis line width
+        % set(gca, 'GridAlpha', 0.3);                                                     % Set grid line intensity (transparency)
+        % set(gca, 'XColor', 'k', 'YColor', 'k');                                         % Set axis line color to black
+        % grid on;                                                                        % Turn on grid
+        % set(gca, 'XGrid', 'on', 'YGrid', 'on', 'GridColor', grid_color);                % Control grid for X and Y axis        
+        % box on;                                                                         % Use 'box off' if you want to remove the box around the axes
+        % xlabel('$x$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+        % xticklabels({'-5c','0','5c'})
+        % set(gca, 'TickDir', 'out');                                                     % Options: 'in', 'out', 'both'        
+        % grid minor;
+        % set(gca, 'MinorGridLineStyle', ':');                                            % Dotted minor grid
+        % set(gca, 'MinorGridAlpha', 0.2);                                                % Set minor grid transparency    
+        % if i==-30
+        %     ylabel('$\partial\phi(x,c)/\partial x$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+        %     if savePlots
+        %         exportgraphics(gca,'Figures/diffphi.pdf','contenttype','vector')
+        %     end
+        % else
+        %     ylabel('$\partial\varphi(x,c)/\partial x$', 'Interpreter', 'latex', 'FontSize', fsLatex)
+        %     if savePlots
+        %         exportgraphics(gca,'Figures/diffvarphi.pdf','contenttype','vector')
+        %     end
+        % end        
+        %
+        countFig = countFig+1;
+    end
+end
+
+
+
+
