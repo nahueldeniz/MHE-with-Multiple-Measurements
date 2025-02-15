@@ -79,7 +79,7 @@ function S = build_setup(S)
     S.config.solver         = 'casadi';             % options: 'casadi', 'acado'    
     S.config.CtrlMethod     = 'soft_constraints';   % 'soft_constraints', 'fnmppc'
     S.config.integrator     = 'RK4';                % 'euler'
-    S.config.EstMethod      = 'standard';           % 'loss', 'bayesian', 'standard';
+    S.config.EstMethod      = 'mult_meas';           % 'loss', 'bayesian', 'standard', 'mult_meas';
     % Simulation or field experiment (Husky)_______________________________
     S.config.SIM            = true;
     S.config.stab.compFlg   = false;                % "Smplified design of practically stable MPC schemes", R. Comelli et. al.
@@ -140,7 +140,7 @@ function S = build_setup(S)
     S.config.procDist.amp   = 0.*[(0*pi/180).*ones(S.config.Nt,1); zeros(S.config.Nt+1,1); 0.01.*ones(2,1); 0.01.*ones(2,1)];
     S.config.gpsOutlier     = true;
     S.config.gpsOutlBurstCnt = 0;                                                   % 0: no burst, 1 to Ne number of consecutive outliers
-    S.config.AMPLITUDES     = 1;                                                    % The number of elemets of this variable determines the number of simulations to be carried out
+    S.config.AMPLITUDES     = 10;                                                    % The number of elemets of this variable determines the number of simulations to be carried out
     S.config.gpsOutlierAmp  = [];
     S.config.gpsOutlierProbab = [];                                                 % [0, 100]
     S.config.IMUbiasDev     = 5/180;
@@ -148,10 +148,10 @@ function S = build_setup(S)
     S.config.model.dev      = 15;                                                   % porcentual value of uncertainty
     S.config.iterCorrecOn   = 200;
     S.config.CtrlNoise_lvl  = [0; 0];
-    S.config.DENSITIES      = 10;                                                   % In %, the number of elemets of this variable determines the number of simulations to be carried out
+    S.config.DENSITIES      = 49;                                                   % In %, the number of elemets of this variable determines the number of simulations to be carried out
     % Reference velocities ________________________________________________
     S.config.vNr            = 0;
-    S.config.vNTarget       = 0.3;
+    S.config.vNTarget       = 1.3;
     S.config.timeToReachVNr = 5;                                                    % seconds
     S.config.deltavN        = S.config.vNTarget/(S.config.timeToReachVNr/S.config.Ts + 2*(S.config.Ne+1));
     S.config.disLastTgt     = 0.75;
@@ -174,8 +174,8 @@ function S = build_setup(S)
     S.config.lidarOn        = false;
     S.config.obsDetection   = false;
     % Multiple measurements configuration _________________________________
-    S.config.numSensors     = 1;
-    S.config.fractionTs     = 0;                                                   % Value in [0, 99]: if measurements are taken in burst, then they are taken in this interval of Ts
+    S.config.numSensors     = 10;
+    S.config.fractionTs     = 10;                                                   % Value in [0, 99]: if measurements are taken in burst, then they are taken in this interval of Ts
     % Plot data online during experiments. USeful for debbuging purposes __
     S.config.dataOnline     = true;
     S.config.save_workspace = false;    
@@ -830,6 +830,9 @@ function S = update_EstimatorMeasurement(S)
         elseif strcmp(S.config.EstMethod,'standard')
             updateMeasurement(S.algorithms.mheStandard, double(S.data.ysim(:,end)));
             updateInput(S.algorithms.mheStandard, double(S.sensors.velocities(:,end)));   
+        elseif strcmp(S.config.EstMethod,'mult_meas')
+            updateMeasurement(S.mheLoss.nlmheMultiMeas, double(S.data.ysim(:,end)));    % in S.data.ysim(:,end-2) I save the velocities too
+            updateInput(S.mheLoss.nlmheMultiMeas, double(S.sensors.velocities(:,end)));
         end
     else
         updateMeasurement(S.algorithms.ekfCasadi, double(S.data.ysim(1:end-2,end)));
@@ -849,6 +852,9 @@ function S = call_ESTIMATOR(S)
         elseif strcmp(S.config.EstMethod,'standard')
             solve(S.algorithms.mheStandard);
             q_k = S.algorithms.mheStandard.q_k;
+        elseif strcmp(S.config.EstMethod,'mult_meas')
+            solve(S.mheLoss.nlmheMultiMeas);
+            q_k = S.mheLoss.nlmheMultiMeas.qk;
         end
     else
         solve(S.algorithms.ekfCasadi);
@@ -2648,6 +2654,38 @@ function S = fill_mheLoss(S)
     updateMeasurement(S.mheLoss.nlmheLoss, full(S.dynamic.h(S.init_condition.x0bar)));
 end
 
+function S = init_mheMultiMeas(S)
+    dims        = {};
+    dims.nq     = S.system.nq;
+    dims.nu     = S.system.nu;
+    dims.ny     = S.system.ny;
+    boxConst    = [];
+    % S.mheLoss.nlmheLoss  = mheOptiLoss(S.config.Ne,S.config.Nt,S.dynamic.FNt,S.dynamic.h,dims,boxConst,S.config.Ts);
+    S.mheLoss.nlmheMultiMeas  = mheMultiMeas(S.config.Ne,S.config.Nt,S.dynamic.FNt,S.dynamic.h,dims,boxConst,S.config.Ts,S.config.numSensors);
+
+    set_x0bar(S.mheLoss.nlmheMultiMeas,S.init_condition.x0bar);
+    
+    % setSigmaP(S.mheLoss.nlmheLoss,1.50); % 0.03
+    % setCP(S.mheLoss.nlmheLoss,1e9);
+
+    setJacobians(S.mheLoss.nlmheMultiMeas,S.dynamic.jac_fx,S.dynamic.jac_fu,S.dynamic.jac_hx);
+    
+    set_cPrm(S.mheLoss.nlmheMultiMeas,0.15);
+    set_alpha(S.mheLoss.nlmheMultiMeas,1);
+    
+    setMtxW(S.mheLoss.nlmheMultiMeas,(1e-6).*eye(7));        % Process Noise Variance Matrix diag([0.5.*ones(1,S.config.Nt),0.1,0.25.*ones(1,S.config.Nt),0.1,0.1,0.1,0.1])
+    setMtxR(S.mheLoss.nlmheMultiMeas,diag([0.01 0.01 100 100]));                              % Measurement Noise Variance Matrix diag(diagmx(0.1.*eye(S.config.Nt+1),10.*eye(2)))
+    setVehicleDims(S.mheLoss.nlmheMultiMeas,S.system.Lh);
+end
+
+function S = fill_mheMultiMeas(S)
+    for imhe=1:S.config.Ne
+        updateMeasurement(S.mheLoss.nlmheMultiMeas, repmat(full(S.dynamic.h(S.init_condition.x0bar)),S.config.numSensors,1));
+        updateInput(S.mheLoss.nlmheMultiMeas,zeros(S.system.nu,1));       
+    end
+    updateMeasurement(S.mheLoss.nlmheMultiMeas, repmat(full(S.dynamic.h(S.init_condition.x0bar)),S.config.numSensors,1));
+end
+
 function S = init_mheBayesian(S)
     S.mheAle.l_x     = 1e6;
     S.mheAle.P       = S.mheAle.l_x.*casadi.DM.eye(S.system.nq);           % init. val. of the arrival-cost weight matrix
@@ -2752,9 +2790,8 @@ function S = init_mpc(S)
     S.mpc.box_constraints.QluBounds     = [repmat([-120*pi/180 120*pi/180],S.config.Nt,1); repmat([-inf inf],S.config.Nt+1,1); repmat([-inf inf],2*(S.config.Nt+1),1)];%; [-1 1; -5 5]];
     S.mpc.box_constraints.QNluBounds    = [repmat([-120*pi/180 120*pi/180],S.config.Nt,1); repmat([-inf inf],S.config.Nt+1,1); repmat([-inf inf],2*(S.config.Nt+1),1)];%; [-1 1; -5 5]];
 
-
     S.mpc.box_constraints.UluBounds     = [-2 2;...
-                                           -1 1];
+                                           -2 2];
     S.mpc.box_constraints.dUluBounds    = S.config.Ts.*[-6 6;...  % (rad/s^2), data from: https://answers.ros.org/question/335763/what-is-the-max-linear-acceleration-of-husky-a200/
                                                         -3 3];    % (m/s^2)
     %
@@ -2931,6 +2968,8 @@ function S = gen_init_conditions(S)
     S   = fill_mheBayesian(S);
     S   = init_mheStandard(S);
     S   = fill_mheStandard(S);
+    S   = init_mheMultiMeas(S);
+    S   = fill_mheMultiMeas(S);
     % Controller
     S   = init_mpc(S);
     S   = init_fnmppc(S);
