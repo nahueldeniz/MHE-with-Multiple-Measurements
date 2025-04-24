@@ -79,7 +79,7 @@ function S = build_setup(S)
     S.config.solver         = 'casadi';             % options: 'casadi', 'acado'    
     S.config.CtrlMethod     = 'soft_constraints';   % 'soft_constraints', 'fnmppc'
     S.config.integrator     = 'RK4';                % 'euler'
-    S.config.EstMethod      = 'standard';            % 'loss', 'bayesian', 'oikf_am', 'vbkldpf', 'improved_mc', 'iekf_lstm', 'standard'; 'mult_meas'
+    S.config.EstMethod      = 'vbkldpf';            % 'loss', 'bayesian', 'oikf_am', 'vbkldpf', 'improved_mc', 'iekf_lstm', 'standard'; 'mult_meas'
     % Simulation or field experiment (Husky)_______________________________
     S.config.SIM            = true;
     S.config.stab.compFlg   = false;                % "Smplified design of practically stable MPC schemes", R. Comelli et. al.
@@ -555,7 +555,6 @@ function flag = check_end_condition(S)
     if (condition <= S.config.disLastTgt) && S.path.last_tgt
         flag = true;
     end
-    flag = flag || S.exit.flag;
 end
 
 function S = ROS(S)
@@ -1265,10 +1264,7 @@ function S = call_MPC(S)
         %
         S.data.references = [S.data.references, S.controller.ref.xyth];
     catch
-        S.exit.flag         = true;
-        S.mpc.Controls      = [S.mpc.Controls, [0;0]];
-        S.exec_time.t_mpc   = [S.exec_time.t_mpc, toc];
-        S.data.references   = [S.data.references, S.controller.ref.xyth];
+
     end
 end
 
@@ -3264,8 +3260,6 @@ function S = reserve_temp_memory(S)
     S.controller.ref.thetaReachable          = [];
     %
     S.estimator.mtxP                         = [];
-    %
-    S.exit.flag                              = false;
     %
     if S.config.video && ~S.config.stab.compFlg
         nameVid = strcat(['obsAvoidanceGNT-Nt',num2str(S.config.Nt),'-Nc',num2str(S.config.Nc),'-Np',num2str(S.config.Np),'-numMovObs',num2str(S.config.maxMovingObs),'-numStatObs',num2str(S.config.maxStaticObs),'-mthd-',S.config.CtrlMethod,'.avi']);
